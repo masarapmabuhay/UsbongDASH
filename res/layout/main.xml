@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/UsbongMainMenuParentLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" 
+    android:background="@drawable/bg"
+    >
+
+  	<ImageView
+  	    android:id="@+id/dash_logo_imageview"
+  	    android:layout_width="wrap_content"
+  	    android:layout_height="wrap_content"
+  	    android:background="@drawable/dash_logov4"
+  	    android:contentDescription="@string/dash_logo" 
+  	    android:layout_above="@+id/dash_symbol_logo_imageview"
+  	    android:layout_centerHorizontal="true"
+  	    android:layout_marginBottom="8dp"/>
+
+  	<ImageView
+  	    android:id="@+id/dash_symbol_logo_imageview"
+  	    style="@style/UsbongDefaultImageView"
+  	    android:layout_width="wrap_content"
+  	    android:layout_height="wrap_content"
+  	    android:background="@drawable/dash_symbol_logo"
+  	    android:contentDescription="@string/dash_logo" 
+  	    android:layout_alignParentLeft="true"
+  	    android:layout_centerVertical="true"
+  	    android:layout_marginLeft="8dp"/>  	
+  	
+	<Button android:id="@+id/start_button"
+	style="@style/UsbongMainMenuButton" 
+	android:text="@string/start" 
+	android:layout_toRightOf="@+id/dash_symbol_logo_imageview"
+	android:layout_below="@+id/dash_logo_imageview"
+	android:layout_marginTop="16dp"/>
+	
+	<Button android:id="@+id/settings_button"
+	style="@style/UsbongMainMenuButton"
+    android:text="@string/settings"     
+	android:layout_toRightOf="@+id/dash_symbol_logo_imageview"
+    android:layout_below="@+id/start_button"/>
+
+	<Button android:id="@+id/conditions_of_use_button"
+	style="@style/UsbongMainMenuButton"
+    android:text="@string/conditions_of_use" 
+    android:layout="@+id/start_button"
+    android:layout_toRightOf="@+id/dash_symbol_logo_imageview"    
+    android:layout_below="@+id/settings_button"/>
+	
+	<Button android:id="@+id/about_button"
+	style="@style/UsbongMainMenuButton"
+    android:text="@string/about" 
+    android:layout_toRightOf="@+id/dash_symbol_logo_imageview"    
+    android:layout_below="@+id/conditions_of_use_button"/>    
+	
+	<Button android:id="@+id/exit_button"
+	style="@style/UsbongMainMenuButton"
+    android:text="@string/exit" 
+    android:layout_toRightOf="@+id/dash_symbol_logo_imageview"    
+    android:layout_below="@+id/about_button"/>    
+    
+	<ImageView android:id="@+id/usbong_logo_imageview"
+		android:background="@drawable/powered_by_usbong_logov2"
+	  	style="@style/UsbongDefaultImageView"
+	  	android:contentDescription="@string/usbong_logo"
+	  	android:layout_alignParentBottom="true"
+	  	android:layout_marginBottom="8dp"		  	
+  		android:layout_centerHorizontal="true"	
+  		/>
+</RelativeLayout>	    	

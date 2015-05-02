@@ -1,0 +1,17 @@
+--Usbong DASH --
+ver: April 30, 2015
+
+--Core Developers--
+University of the Philippines- Philippine General Hospital
+Nathaniel S. Orillaza Jr., MD
+Peter B. Syson, MD
+
+Usbong Social Systems, Inc.
+Michael B. Syson, MS
+
+Contact:
+Website: www.usbong.ph
+Mailing List: usbong-users@googlegroups.com
+Email: usbong.ph@gmail.com
+
+Copyright 2015.
