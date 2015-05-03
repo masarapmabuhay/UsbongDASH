@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <resources>
     <string name="hello">Hello World, UsbongActivity!</string>
-    <string name="app_name">Usbong</string>
+    <string name="app_name">Usbong DASH</string>
     <string name="start">Start</string>
     <string name="usbong_logo">Usbong Logo</string>    
     <string name="dash_logo">DASH Logo</string>    
