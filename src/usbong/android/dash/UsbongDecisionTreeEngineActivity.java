@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 Michael Syson
+ * Copyright 2012-2015 Michael Syson
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -181,7 +181,7 @@ public class UsbongDecisionTreeEngineActivity extends Activity implements TextTo
 	private String myOutputDirectory=UsbongUtils.getDateTimeStamp()+"/"; //add the ".csv" after appending the timestamp //output.csv
 	
 	private static UsbongDecisionTreeEngineActivity instance;
-//    private static TextToSpeech mTts; //not needed in Usbong DASH, Mike, 30 April 2015
+    private static TextToSpeech mTts; //needed; //not needed in Usbong DASH, Mike, 30 April 2015
     private int MY_DATA_CHECK_CODE=0;
 	private final int EMAIL_SENDING_SUCCESS=99;
 
@@ -237,7 +237,7 @@ public class UsbongDecisionTreeEngineActivity extends Activity implements TextTo
 
         //default..
         currLanguageBeingUsed=UsbongUtils.LANGUAGE_ENGLISH;
-/*      //not needed in Usbong DASH, Mike, 30 April 2015
+//needed;      //not needed in Usbong DASH, Mike, 30 April 2015
         //==================================================================
         //text-to-speech stuff
         Intent checkIntent = new Intent();
@@ -247,7 +247,7 @@ public class UsbongDecisionTreeEngineActivity extends Activity implements TextTo
         mTts = new TextToSpeech(this,this);
 		mTts.setLanguage(new Locale("eng", "EN"));//default
         //==================================================================
-*/        
+        
     	usbongNodeContainer = new Vector<String>();
     	classificationContainer = new Vector<String>();
     	radioButtonsContainer = new Vector<String>();
@@ -448,6 +448,15 @@ public class UsbongDecisionTreeEngineActivity extends Activity implements TextTo
 				selectButton.setOnClickListener(new View.OnClickListener() {					
 					public void onClick(View v) {
 						currLanguageBeingUsed = UsbongUtils.getLanguageID(UsbongUtils.getSetLanguage());
+						
+						//added by Mike, 4 June 2015
+						//remove the current element in the node container and start anew
+						//so that when end-user presses back, the previous screen will appear,
+						//and not cause the same screen to reappear.
+						if (!usbongNodeContainer.isEmpty()) {
+							usbongNodeContainer.removeElementAt(usbongNodeContainerCounter);                            
+			                usbongNodeContainerCounter--;
+						}						
 						initParser();
 						//cancel the dialog the setLanguage() method has already been called when button is checked
 				        dialog.cancel();
@@ -591,7 +600,7 @@ public class UsbongDecisionTreeEngineActivity extends Activity implements TextTo
 				    	}
 				    	break;    		
 				}
-/*//not needed in Usbong DASH, Mike, 30 April 2015
+//needed; //not needed in Usbong DASH, Mike, 30 April 2015
 				//it's either com.svox.pico (default) or com.svox.classic (Japanese, etc)        				
 				mTts.setEngineByPackageName("com.svox.pico"); //note: this method is already deprecated
 				switch (currLanguageBeingUsed) {
@@ -613,7 +622,7 @@ public class UsbongDecisionTreeEngineActivity extends Activity implements TextTo
 						mTts.speak(sb.toString(), TextToSpeech.QUEUE_ADD, null); //QUEUE_FLUSH			
 						break;
 				}
-*/				
+				
 				return true;
 			default:
 				return super.onOptionsItemSelected(item);
