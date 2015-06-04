@@ -6,6 +6,9 @@ Usbong Social Systems, Inc.
 Michael B. Syson, MS
 Peter B. Syson, MD
 
+--Acknowledgment--
+Institute for Work & Health
+
 Contact:
 Website: www.usbong.ph
 Mailing List: usbong-users@googlegroups.com
