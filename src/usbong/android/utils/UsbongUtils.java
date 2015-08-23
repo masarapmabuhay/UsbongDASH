@@ -993,7 +993,7 @@ public class UsbongUtils {
 			//last acccessed: 17 Jan. 2012
 			sendToCloudBasedServiceIntent.setType("text/plain");
 			
-			sendToCloudBasedServiceIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "usbong;"+UsbongUtils.getDateTimeStamp());
+			sendToCloudBasedServiceIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "usbongDASH;"+UsbongUtils.getDateTimeStamp());
 			sendToCloudBasedServiceIntent.putExtra(android.content.Intent.EXTRA_TEXT, currLineString); //body
 //			sendToCloudBasedServiceIntent.putExtra(android.content.Intent.EXTRA_EMAIL, new String[]{"masarapmabuhay@gmail.com"});//"masarapmabuhay@gmail.com"); 	
 			
