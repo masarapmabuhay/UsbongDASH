@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="usbong.android.dash"
       android:versionCode="2"
-      android:versionName="26 Oct, 2015"
+      android:versionName="27 Oct, 2015"
       android:installLocation="auto"      
 >
     <uses-sdk android:minSdkVersion="11" 
