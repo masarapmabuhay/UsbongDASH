@@ -6,6 +6,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import usbong.android.dash.R;
+import usbong.android.multimedia.graphics.MyCanvas;
+import usbong.android.utils.UsbongUtils;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -16,9 +19,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.Window;
-import usbong.android.dash.R;
-import usbong.android.multimedia.graphics.MyCanvas;
-import usbong.android.utils.UsbongUtils;
 
 public class PaintActivity extends Activity
 {

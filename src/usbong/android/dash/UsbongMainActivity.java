@@ -14,22 +14,26 @@
  */
 package usbong.android.dash;
 
-import usbong.android.dash.R;
 import usbong.android.utils.UsbongUtils;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 
 /*
  * This is Usbong's Main Menu activity. 
  */
-public class UsbongMainActivity extends Activity 
+public class UsbongMainActivity extends AppCompatActivity
 {	
 	private Button startButton;
 	private Button conditionsOfUseButton;
@@ -41,6 +45,8 @@ public class UsbongMainActivity extends Activity
 				
 	public static String timeStamp;
 	
+	private static Activity myActivityInstance;
+	
 //	private static Date startTime;	
 	
 	protected UsbongDecisionTreeEngineActivity myUsbongDecisionTreeEngineActivity;
@@ -49,7 +55,19 @@ public class UsbongMainActivity extends Activity
     @Override
     public void onCreate(Bundle savedInstanceState) 
     {
+		getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
+
         super.onCreate(savedInstanceState);
+
+        //added by Mike, 27 Sept. 2015
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        
+        myActivityInstance = this;
+        
+        //added by Mike, 25 Sept. 2015
+//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setTitle("Usbong Engine");
+
 //    	if (instance==null) { //comment this out, since the app seems to retain the instance even after we do a finish to GameActivity to close the app...
 	        setContentView(R.layout.main);	        
 	        instance = this;
@@ -210,5 +228,50 @@ public class UsbongMainActivity extends Activity
 		});
 		prompt.show();
 	}
-*/	
+*/
+    //added by Mike, 25 Sept. 2015
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.title_menu, menu);
+		return super.onCreateOptionsMenu(menu); 
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{		
+		switch(item.getItemId())
+		{
+			case(R.id.settings):
+		    	new AlertDialog.Builder(UsbongMainActivity.this).setTitle("Settings")
+				.setMessage("Automatic voice-over narration:")
+//				.setView(requiredFieldAlertStringTextView)
+		    	.setPositiveButton("Turn On", new DialogInterface.OnClickListener() {					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						UsbongUtils.isInAutoVoiceOverNarration=true;
+					}
+		    	})
+			    .setNegativeButton("Turn Off", new DialogInterface.OnClickListener() {					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						UsbongUtils.isInAutoVoiceOverNarration=false;
+					}
+				}).show();
+				return true;
+			case(R.id.about):
+		    	new AlertDialog.Builder(UsbongMainActivity.this).setTitle("About")
+				.setMessage(UsbongUtils.readTextFileInAssetsFolder(UsbongMainActivity.this,"credits.txt")) //don't add a '/', otherwise the file would not be found
+				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+					}
+				}).show();
+				return true;
+			default:
+				return super.onOptionsItemSelected(item);
+		}
+	}
+
 }

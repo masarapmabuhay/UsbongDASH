@@ -46,6 +46,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
@@ -57,19 +58,33 @@ import org.apache.http.message.BasicNameValuePair;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
+import com.nostra13.universalimageloader.cache.memory.impl.WeakMemoryCache;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
+import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
+
 import usbong.android.dash.UsbongDecisionTreeEngineActivity;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Environment;
 import android.text.Html;
+import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.method.MovementMethod;
@@ -84,17 +99,33 @@ import android.widget.TextView;
 
 public class UsbongUtils {		
 	public static boolean IS_IN_DEBUG_MODE=false;
-	public static boolean STORE_OUTPUT=true;
+	public static boolean STORE_OUTPUT=false;
+	
+	public static String DEFAULT_UTREE_TO_LOAD="dash"; //added by Mike, 27 Oct. 2015
 
-	public static String BASE_FILE_PATH = Environment.getExternalStorageDirectory()+"/usbong_dash/";
-	public static String USBONG_TREES_FILE_PATH = BASE_FILE_PATH + "usbong_dash_trees/";
+	public static String BASE_FILE_PATH = Environment.getExternalStorageDirectory()+"/usbong_kuto/";
+	public static String NON_TEMP_USBONG_TREES_FILE_PATH = BASE_FILE_PATH + "usbong_kuto_trees/";
+	public static String USBONG_TREES_FILE_PATH; //this is updated by UsbongDecisionTreeEngineActivity // = UsbongDecisionTreeEngineActivity.getInstance().getCacheDir().getAbsolutePath() + "usbong_kuto/" + "usbong_kuto_trees/";
+
 	//	public static String BASE_FILE_PATH = "/sdcard/usbong/";
 	private static String timeStamp;
 	private static String dateTimeStamp;
+	
+	public static boolean isInAutoVoiceOverNarration=true; //added by Mike, 25 Sept. 2015
     	
 	public static final int LANGUAGE_ENGLISH=0; 
 	public static final int LANGUAGE_FILIPINO=1;
 	public static final int LANGUAGE_JAPANESE=2;
+	public static final int LANGUAGE_MANDARIN=3; 
+	public static final int LANGUAGE_BISAYA=4;
+	public static final int LANGUAGE_ILONGGO=5;
+	public static final int LANGUAGE_KAPAMPANGAN=6;
+	public static final int LANGUAGE_FRENCH=7;
+	public static final int LANGUAGE_MANDARIN_SIMPLIFIED=8;
+	public static final int LANGUAGE_MANDARIN_TRADITIONAL=9;
+	public static final int LANGUAGE_SPANISH=10;
+	
+	private static String currLanguage;
 	
 	private static String destinationServerURL;
 	
@@ -118,6 +149,16 @@ public class UsbongUtils {
 
 	public static ArrayList<String> tokenizedStringList;
 	
+	//added by Mike, 22 Sept. 2015
+	public static String getCurrLanguage(){
+		return currLanguage;
+	}
+	
+	//added by Mike, 22 Sept. 2015	
+	public static void setCurrLanguage(String s) {
+		currLanguage = s;
+	}
+	
 	//added by Mike, Feb. 11, 2013
 	public static void setDebugMode(boolean b) {
 		IS_IN_DEBUG_MODE=b;
@@ -127,7 +168,7 @@ public class UsbongUtils {
 	public static void setStoreOutput(boolean b) {
 		STORE_OUTPUT=b;
 	}
-
+/*//commented out by Mike, 24 Sept. 2015; now using: android.util.Patterns.EMAIL_ADDRESS
 	//Reference: Andrei Buneyeu's answer in http://stackoverflow.com/questions/1819142/how-should-i-validate-an-e-mail-address-on-android;
 	//last accessed: 21 Aug. 2012
 	public static final Pattern EMAIL_ADDRESS_PATTERN = Pattern.compile(
@@ -139,7 +180,7 @@ public class UsbongUtils {
 	          "[a-zA-Z0-9][a-zA-Z0-9\\-]{0,25}" +
 	          ")+"
 	      );	
-	
+*/	
 	public static boolean is_a_utree=false;
 	
 	public static char[] alphanumeric = {'a','b','c','d','e','f','g','h','i','j',
@@ -147,10 +188,15 @@ public class UsbongUtils {
         							 	 'u','v','w','x','y','z','0','1','2','3',
         							 	 '4','5','6','7','8','9'};
 	
+//	private static final Pattern hintStringTokenizerPattern = Pattern.compile("\W*");
+	
 	public static boolean checkEmail(String email) {
-        return EMAIL_ADDRESS_PATTERN.matcher(email).matches();
+/*        return EMAIL_ADDRESS_PATTERN.matcher(email).matches();
+ */
+		return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches(); //updated by Mike, 24 Sept. 2015
 	}
 	
+	//added by Mike, 27 Oct. 2015
 	public static void initUsbongConfigFile() {
         try 
         {
@@ -192,23 +238,24 @@ public class UsbongUtils {
         	e.printStackTrace();
         }
 	}
-	
+
 	public static boolean checkIfInDebugMode() {
 	    try {	    	
 			InputStreamReader reader = UsbongUtils.getFileFromSDCardAsReader(UsbongUtils.BASE_FILE_PATH + "usbong.config");	
-			BufferedReader br = new BufferedReader(reader);    		
-	    	String currLineString;        	
-	    	while((currLineString=br.readLine())!=null)
-	    	{ 	
-				if (currLineString.equals("IS_IN_DEBUG_MODE=ON")) {
-					return true;
-				}
-	    	}	        				
+			if (reader!=null) { //added by Mike, 4 Oct. 2015
+				BufferedReader br = new BufferedReader(reader);    		
+		    	String currLineString;        	
+		    	while((currLineString=br.readLine())!=null)
+		    	{ 	
+					if (currLineString.equals("IS_IN_DEBUG_MODE=ON")) {
+						return true;
+					}
+		    	}	        				
+			}
 		}
 		catch(Exception e) {
 			e.printStackTrace();
 		}
-
 	    return false;
 	}
 
@@ -278,7 +325,7 @@ public class UsbongUtils {
 	public static void createUsbongFileStructure() throws IOException {
 		//code below doesn't seem to work
 //		String baseFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "usbong/";
-		File directory = new File(USBONG_TREES_FILE_PATH);
+		File directory = new File(NON_TEMP_USBONG_TREES_FILE_PATH);
 		System.out.println(">>>> Directory: " + directory.getAbsolutePath());
 		
 		if (!directory.exists() && !directory.mkdirs()) 
@@ -286,6 +333,24 @@ public class UsbongUtils {
 			System.out.println(">>>> Creating file structure for usbong");
     		throw new IOException("Base File Path to file could not be created.");
     	}    			
+
+		//--------------------
+		//only for Kuto (earlier versions; before 4 Oct. 2015)
+		//--------------------
+		//remove existing files
+    	//delete "kuto.utree" (only needed for earlier versions; before 4 Oct. 2015)
+		File file = new File(NON_TEMP_USBONG_TREES_FILE_PATH+"/"+"kuto.utree");		
+		if (file.exists()) {
+        	file.delete();    		
+//    		deleteRecursive(file);//do this to delete contents of the directory
+    	}
+		File fileTemp = new File(NON_TEMP_USBONG_TREES_FILE_PATH+"/"+"temp/");		
+		if (fileTemp.exists()) {
+//        	file.delete();    		
+    		deleteRecursive(fileTemp);//do this to delete contents of the directory
+    	}
+		//-------------------
+				
 		System.out.println(">>>> Leaving createUsbongFileStructure");
 	}	
 	
@@ -336,15 +401,40 @@ public class UsbongUtils {
     	}
     }
 */    
-    public static void storeAssetsFileIntoSDCard(Activity a, String filename) throws IOException {
-    	String destination = USBONG_TREES_FILE_PATH;//+"dash.utree";
 
+	//updated by Mike, 4 Oct. 2015		
+    public static void storeAssetsFileIntoSDCard(Activity a, String filename) throws IOException {
+/*
+    	//delete "kuto.utree" (only needed for earlier versions; before 4 Oct. 2015)
+		File file = new File(NON_TEMP_USBONG_TREES_FILE_PATH+"/"+filename);		
+		if (file.exists()) {
+        	file.delete();    		
+//    		deleteRecursive(file);//do this to delete contents of the directory
+    	}
+		Log.d(">>>", USBONG_TREES_FILE_PATH+"/"+filename);
+//    	file.mkdirs();			
+*/    	
+    	
+//		File outputDir = a.getCacheDir(); // context being the Activity pointer
+//		File directory = File.createTempFile(USBONG_TREES_FILE_PATH, "", outputDir);
+//		File directory = new File(Environment.getExternalStorageDirectory() + USBONG_TREES_FILE_PATH);
+		File directory = new File(USBONG_TREES_FILE_PATH);
+		    	
+		if (!directory.exists() && !directory.mkdirs()) 
+    	{
+			System.out.println(">>>> Creating file structure for usbong");
+    		throw new IOException("Base File Path to file could not be created.");
+    	}    			
+    	String destination = directory.getAbsolutePath();
+    	Log.d(">>>destination",destination);
+    	
+/*    	
     	//delete usbong_demo_tree.xml
     	File file = new File(destination);
     	if (file.exists()) {
         	file.delete();    		
     	}
-
+*/
 //    	destination = USBONG_TREES_FILE_PATH+"dash.utree"; //commented out by Mike, 23 April 2015
 
 /* //commented out by Mike, 24 April 2015
@@ -356,12 +446,12 @@ public class UsbongUtils {
 */
 			
 //			System.out.println(">>>>>> File " + destination + " doesn't exist. Creating file.");
-			file.mkdirs();
-
+/*			file.mkdirs();
+*/
 	    	//arg#1 is the destination, arg#2 is the string 
 //			storeOutputInSDCard(destination+"/dash.utree", readTextFileInAssetsFolder(a,filename));		
 //		storeOutputInSDCard(destination, readTextFileInAssetsFolder(a,filename));		
-		copyAssetToSDCard(filename, destination); //added by Mike, 30 April 2015
+		copyAssetToSDCard(filename, destination+"/"); //added by Mike, 30 April 2015
 
 /*	//commented out by Mike, 24 April 2015		
 			file = new File(destination+"/res/");
@@ -373,7 +463,43 @@ public class UsbongUtils {
 */
     }
 
+    public static void storeUsbongAppAssetsFileIntoSDCard(Activity a, String filename) throws IOException {
+    	String destination = USBONG_TREES_FILE_PATH+"usbong_demo_tree.xml";
+
+    	//delete usbong_demo_tree.xml
+    	File file = new File(destination);
+    	if (file.exists()) {
+        	file.delete();    		
+    	}
+
+    	destination = USBONG_TREES_FILE_PATH+"usbong_demo_tree.utree";
+
+    	//replace usbong_demo_tree.xml with usbong_demo_tree.utree
+    	file = new File(destination);
+    	file.delete();
+
+    	//start anew
+//    	if(!file.exists()) {
+			
+//			System.out.println(">>>>>> File " + destination + " doesn't exist. Creating file.");
+			file.mkdirs();
+
+	    	//arg#1 is the destination, arg#2 is the string 
+			storeOutputInSDCard(destination+"/usbong_demo_tree.xml", readTextFileInAssetsFolder(a,filename));		
+			
+			file = new File(destination+"/res/");
+			file.mkdirs();
+			
+			copyAssetToSDCard("sample_image.png", destination+"/res/");
+			copyAssetToSDCard("bg.png", destination+"/res/");
+		//    	}
+    }
+
     private static void copyAssetToSDCard(String filename, String filepath) {
+    	Log.d(">>>","inside: copyAssetToSDCard(...)");
+    	Log.d(">>>","filename: "+filename);
+    	Log.d(">>>","filepath: "+filepath);
+    	
         InputStream in = null;
         OutputStream out = null;
         try {
@@ -390,6 +516,123 @@ public class UsbongUtils {
         }       
 
     }
+
+    //added by Mike, 21 July 2015
+    public static Uri getAudioUriFromUTree(String filename, String language) {
+/*    	
+    	String filePath = UsbongUtils.USBONG_TREES_FILE_PATH + myTreeFileName+".utree/audio/"+language+filename+".mp3";
+		File file = new File(filePath);
+		if(!file.exists())
+		{
+			file = new File(UsbongUtils.USBONG_TREES_FILE_PATH+"temp/"+myTreeFileName+".utree/audio/"+language+filename+".mp3");
+
+			if(!file.exists()) {						
+				return null;
+			}
+		}
+		//if this point is reached, this means that trans file exists		  
+		return Uri.fromFile(file);
+*/
+		return Uri.fromFile(new File(getAudioFilePathFromUTree(filename, language)));
+    }
+
+    //added by Mike, 21 July 2015
+    public static String getAudioFilePathFromUTree(String filename, String language) {
+/*    	
+    	String filePath = UsbongUtils.USBONG_TREES_FILE_PATH + myTreeFileName+".utree/audio/"+language+"/"+filename+".mp3";    	    	
+		File file = new File(filePath);
+		if(!file.exists())
+		{
+			file = new File(UsbongUtils.USBONG_TREES_FILE_PATH+"temp/"+myTreeFileName+".utree/audio/"+"/"+language+filename+".mp3");
+
+			if(!file.exists()) {						
+				return null;
+			}
+		}
+		//if this point is reached, this means that trans file exists
+		return file.getAbsolutePath();
+*/
+    	String[] fileExtensions = {".mp3",".wav",".mp4",".ogg",".m4a"};
+    	for (int i=0; i<fileExtensions.length; i++) {
+        	String filePath = UsbongUtils.USBONG_TREES_FILE_PATH + "temp/" + myTreeFileName+".utree/audio/"+language+"/"+filename+fileExtensions[i];    	    	
+        	Log.d(">>>>filePath",filePath);
+    		File file = new File(filePath);
+    		if(file.exists()) {
+    			return file.getAbsolutePath();
+    		}
+    	}
+/*    	
+    	for (int i=0; i<fileExtensions.length; i++) {
+        	String filePath = UsbongUtils.USBONG_TREES_FILE_PATH + myTreeFileName+".utree/audio/"+language+"/"+filename+fileExtensions[i];
+    		File file = new File(filePath);
+    		if(file.exists()) {
+    			return file.getAbsolutePath();
+    		}
+    	}    	
+*/    	
+		return null;    	
+    }
+    
+    //added by Mike, 21 July 2015
+    public static String getAudioFilePathForThisScreenIfAvailable(String currUsbongNode) {
+		StringTokenizer st = new StringTokenizer(currUsbongNode, "~");
+		int totalTokens = st.countTokens();
+		int counter = 0;		
+		String myStringToken = "";
+		
+		while (counter<totalTokens-1) { //up to second to the last only
+			myStringToken = st.nextToken(); 
+			counter++;
+			
+			//Reference: http://stackoverflow.com/questions/9700115/difference-between-matches-and-equalsignorecase-or-equals-in-string-class;
+			//last accessed: 19 July 2015; answer by MByD 
+/*
+			if (myStringToken.matches("audioName=.*")) {
+		        Log.d(">>>>myStringToken.substring(10)",myStringToken.substring(10));
+				return myStringToken.substring(10); //why 10? to remove "audioName="
+			}
+*/			
+			if (myStringToken.matches("@audioName=.*")) {
+		        Log.d(">>>>myStringToken.substring(11)",myStringToken.substring(11));
+				return myStringToken.substring(11); //why 11? to remove "@audioName="
+			}			
+		}
+		return "";
+    }
+
+    //added by Mike, 21 July 2015
+    public static String getBGAudioFilePathFromUTree(String filename) {
+    	String[] fileExtensions = {".mp3",".wav",".mp4",".ogg",".m4a"};
+    	for (int i=0; i<fileExtensions.length; i++) {
+        	String filePath = UsbongUtils.USBONG_TREES_FILE_PATH + "temp/" + myTreeFileName+".utree/audio/"+filename+fileExtensions[i];    	    	
+        	Log.d(">>>>filePath",filePath);
+    		File file = new File(filePath);
+    		if(file.exists()) {
+    			return file.getAbsolutePath();
+    		}
+    	}
+		return null;    	
+    }
+    
+    //added by Mike, 21 July 2015
+    public static String getBGAudioFilePathForThisScreenIfAvailable(String currUsbongNode) {
+		StringTokenizer st = new StringTokenizer(currUsbongNode, "~");
+		int totalTokens = st.countTokens();
+		int counter = 0;		
+		String myStringToken = "";
+		
+		while (counter<totalTokens-1) { //up to second to the last only
+			myStringToken = st.nextToken(); 
+			counter++;
+			
+			if (myStringToken.matches("@bgAudioName=.*")) {
+		        Log.d(">>>>myStringToken.substring(13)",myStringToken.substring(13));
+				return myStringToken.substring(13); //why 13? to remove "@bgAudioName="
+			}			
+		}
+		return "";
+    }
+
 /*    
     //from rohith (stackoverflow); 
     //Reference: http://stackoverflow.com/questions/4447477/android-how-to-copy-files-in-assets-to-sdcard;
@@ -518,6 +761,28 @@ public class UsbongUtils {
 		return false;
     }
 
+    //added by Mike, 19 July 2015
+    public static String getSpecificBGImageStringForThisScreenIfAvailable(String currUsbongNode) {
+		StringTokenizer st = new StringTokenizer(currUsbongNode, "~");
+		int totalTokens = st.countTokens();
+		int counter = 0;		
+		String myStringToken = "";
+		
+		while (counter<totalTokens-1) { //up to second to the last only
+			myStringToken = st.nextToken(); 
+			counter++;
+			
+			//Reference: http://stackoverflow.com/questions/9700115/difference-between-matches-and-equalsignorecase-or-equals-in-string-class;
+			//last accessed: 19 July 2015; answer by MByD 
+			if (myStringToken.matches("@bg=.*")) {
+		        Log.d(">>>>myStringToken.substring(4)",myStringToken.substring(4));
+				return myStringToken.substring(4); //why 3? to remove "bg="
+			}
+		}
+		return null;
+    }
+
+    
     //This methods gets the name of the next node
     //example: <task-node name="textDisplay~You get a full rest.~I choose to go to sleep.">
     //becomes "textDisplay~You get a full rest."
@@ -629,8 +894,10 @@ public class UsbongUtils {
 	{
 		try 
 		{  	
-		      InputStreamReader reader = new InputStreamReader(getFileFromSDCardAsInputStream(filePath),"UTF-8"); 
-        	  return reader;
+			  if (getFileFromSDCardAsInputStream(filePath)!=null) { //added by Mike, 4 Oct. 2015
+			      InputStreamReader reader = new InputStreamReader(getFileFromSDCardAsInputStream(filePath),"UTF-8"); 
+	        	  return reader;
+			  }
     	}
     	catch(Exception e) {
     		System.out.println("ERROR in reading FILE.");
@@ -646,6 +913,14 @@ public class UsbongUtils {
 	public static void clearTempFolder() {
 		try 
 		{  	
+			//added by Mike, 4 Oct. 2015
+			File file = new File(USBONG_TREES_FILE_PATH+"temp/");
+	    	if (file.exists()) {
+//	        	file.delete();    		
+	    		deleteRecursive(file);//do this to delete contents of the directory
+	    	}
+	    	file.mkdirs();			
+/*			
 			//first create temp folder
 			File file = new File(USBONG_TREES_FILE_PATH+"temp/");
 	    	if (file.exists()) {
@@ -653,6 +928,7 @@ public class UsbongUtils {
 	    		deleteRecursive(file);//do this to delete contents of the directory
 	    	}
 	    	file.mkdirs();
+*/	    	
 		}
 		catch(Exception e){
 			e.printStackTrace();
@@ -675,6 +951,9 @@ public class UsbongUtils {
 	    	}
 	    	file.mkdirs();
 */
+			
+			Log.d(">>>>",UsbongUtils.USBONG_TREES_FILE_PATH + treeFile+".xml");
+
 			//test if it's a .xml
 			File file = new File(UsbongUtils.USBONG_TREES_FILE_PATH + treeFile+".xml");
 
@@ -846,6 +1125,7 @@ public class UsbongUtils {
 			
 			for(int i=0; i<totalTrans; i++) {
 				ret.add(listOfTrans[i].replace(".xml", "")); //remove the ".xml" at the end
+				Log.d(">>>>>>listOfTrans[i]:",listOfTrans[i]);
 			}			
     	}
     	catch(Exception e) {
@@ -941,6 +1221,30 @@ public class UsbongUtils {
 	    	else if (s.equals("Japanese")) {
 	    		return LANGUAGE_JAPANESE;
 	    	}
+	    	else if (s.equals("Mandarin")) {
+	    		return LANGUAGE_MANDARIN;
+	    	}
+	    	if (s.equals("Bisaya")) {
+	    		return LANGUAGE_BISAYA;
+	    	}
+	    	if (s.equals("Ilonggo")) {
+	    		return LANGUAGE_ILONGGO;
+	    	}
+	    	if (s.equals("Kapampangan")) {
+	    		return LANGUAGE_KAPAMPANGAN;
+	    	}
+	    	if (s.equals("French")) {
+	    		return LANGUAGE_FRENCH;
+	    	}
+	    	if (s.equals("Mandarin_Simplified")) {
+	    		return LANGUAGE_MANDARIN_SIMPLIFIED;
+	    	}
+	    	if (s.equals("Mandarin_Traditional")) {
+	    		return LANGUAGE_MANDARIN_TRADITIONAL;
+	    	}	    	
+	    	else if (s.equals("Spanish")) {
+	    		return LANGUAGE_SPANISH;
+	    	}
     	}
     	return LANGUAGE_ENGLISH;
     }
@@ -951,6 +1255,22 @@ public class UsbongUtils {
     			return "Filipino";
     		case LANGUAGE_JAPANESE:
     			return "Japanese";
+    		case LANGUAGE_MANDARIN:
+    			return "Mandarin";
+    		case LANGUAGE_BISAYA:
+    			return "Bisaya";
+    		case LANGUAGE_ILONGGO:
+    			return "Ilonggo";
+    		case LANGUAGE_KAPAMPANGAN:
+    			return "Kapampangan";
+    		case LANGUAGE_FRENCH:
+    			return "French";
+    		case LANGUAGE_MANDARIN_SIMPLIFIED:
+    			return "Mandarin_Simplified";
+    		case LANGUAGE_MANDARIN_TRADITIONAL:
+    			return "Mandarin_Traditional";    		
+    		case LANGUAGE_SPANISH:
+    			return "Spanish";
     		default:
     			return "English";
     	}
@@ -993,7 +1313,7 @@ public class UsbongUtils {
 			//last acccessed: 17 Jan. 2012
 			sendToCloudBasedServiceIntent.setType("text/plain");
 			
-			sendToCloudBasedServiceIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "usbongDASH;"+UsbongUtils.getDateTimeStamp());
+			sendToCloudBasedServiceIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "usbong;"+UsbongUtils.getDateTimeStamp());
 			sendToCloudBasedServiceIntent.putExtra(android.content.Intent.EXTRA_TEXT, currLineString); //body
 //			sendToCloudBasedServiceIntent.putExtra(android.content.Intent.EXTRA_EMAIL, new String[]{"masarapmabuhay@gmail.com"});//"masarapmabuhay@gmail.com"); 	
 			
@@ -1146,25 +1466,37 @@ public class UsbongUtils {
     	else {
         	path = UsbongUtils.USBONG_TREES_FILE_PATH+myTree+".utree/res/"+resFileName;
     	}
-    	
+ 
+    	Log.d(">>>>>path", path);
     	File imageFile = new File(path+".png");
 
 		if(!imageFile.exists()) {
 			imageFile = new File(path+".jpg");
-			path = path+".jpg";					
+
+			//added by Mike, 19 July 2015
+			if(!imageFile.exists()) {
+				imageFile = new File(path+".jpeg");
+				path = path+".jpeg";					
+			}
+			else {				
+				path = path+".jpg";					
+		    	Log.d(">>>>>path .jpg", path);
+			}
 		}
 		else {
 			path = path+".png";
 		}
 
     	if (imageFile.exists()) {    		
+        	Log.d(">>>>>imageFile.exists!", "exists!");
+
     		return path;		    		
     	}
     	return "null";
 //		return imageFile;
     }
     
-    //supports .png and .jpg
+    //supports .png, .jpg and .jpeg
     public static boolean setImageDisplay(ImageView myImageView, String myTree, String resFileName) {
     	/*
     	File file = new File(path);
@@ -1295,40 +1627,40 @@ public class UsbongUtils {
         ZipInputStream zin = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipFile), BUFFER_SIZE));
 
         try {
-        	Log.d(">>>>>>>","1");
+//        	Log.d(">>>>>>>","1");
             File f = new File(location);
             if (!f.exists()) {
 	            if(!f.isDirectory()) {
 	                f.mkdirs();
-	            	Log.d(">>>>>>>","1.5: f.mkdirs()");
+//	            	Log.d(">>>>>>>","1.5: f.mkdirs()");
 	            }
             }
-        	Log.d(">>>>>>>","2");
+//        	Log.d(">>>>>>>","2");
 
 //            zin = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipFile), BUFFER_SIZE));
             try {
                 ZipEntry ze = null;                
                 while ((ze = zin.getNextEntry()) != null) {
                     String path = location + ze.getName();
-                	Log.d(">>>>>>>","3");
-                	Log.d(">>>>>>>","location: "+location);
-                	Log.d(">>>>>>>","ze.getName(): "+ze.getName());
+//                	Log.d(">>>>>>>","3");
+//                	Log.d(">>>>>>>","location: "+location);
+//                	Log.d(">>>>>>>","ze.getName(): "+ze.getName());
 
                     if (ze.isDirectory()) {
-                    	Log.d(">>>>>>>","4.1");
+//                    	Log.d(">>>>>>>","4.1");
 
                     	File unzipFile = new File(path);
-                    	Log.d(">>>>>>>","5.1");
-                    	Log.d(">>>>>>>","path: "+path);
+//                    	Log.d(">>>>>>>","5.1");
+//                    	Log.d(">>>>>>>","path: "+path);
 
                     	if(!unzipFile.isDirectory()) {
-                        	Log.d(">>>>>>>","6.1");
+//                        	Log.d(">>>>>>>","6.1");
                     		unzipFile.mkdirs();
-                        	Log.d(">>>>>>>","7.1");
+//                        	Log.d(">>>>>>>","7.1");
                         }
                     }
                     else {
-                    	Log.d(">>>>>>>","4.2");
+//                    	Log.d(">>>>>>>","4.2");
                     	File file = new File(path);
                     	file.createNewFile();
                     	
@@ -1336,10 +1668,10 @@ public class UsbongUtils {
                         BufferedOutputStream fout = new BufferedOutputStream(out, BUFFER_SIZE);
                         try {
                             while ( (size = zin.read(buffer, 0, BUFFER_SIZE)) != -1 ) {
-                            	Log.d(">>>>>>>","4.3");
+//                            	Log.d(">>>>>>>","4.3");
                             	fout.write(buffer, 0, size);
                             }
-                        	Log.d(">>>>>>>","4.4");
+//                        	Log.d(">>>>>>>","4.4");
                             zin.closeEntry();
                         }
                         finally {
@@ -1500,12 +1832,14 @@ public class UsbongUtils {
     //added by Mike, Oct. 3, 2014
     public static View applyHintsInView(Activity a, View myView, int type) {
     	Log.d(">>>>>>","1");
-    	String filePath = UsbongUtils.USBONG_TREES_FILE_PATH + myTreeFileName+".utree/hints/hints.xml";
-		File file = new File(filePath);
+//    	String filePath = UsbongUtils.USBONG_TREES_FILE_PATH + myTreeFileName+".utree/hints/hints.xml"; //@todo: change hints.xml to the setLanguage 
+    	String filePath = UsbongUtils.USBONG_TREES_FILE_PATH + myTreeFileName+".utree/hints/" + getCurrLanguage() +".xml";
+    	
+    	File file = new File(filePath);
 		if(!file.exists())
 		{
 	    	Log.d(">>>>>>","2.1");
-			file = new File(UsbongUtils.USBONG_TREES_FILE_PATH+"temp/"+myTreeFileName+".utree/hints/hints.xml");
+			file = new File(UsbongUtils.USBONG_TREES_FILE_PATH+"temp/"+myTreeFileName+".utree/hints/" + getCurrLanguage() +".xml");
 
 			if(!file.exists()) 
 			{						
@@ -1548,6 +1882,7 @@ public class UsbongUtils {
 			case IS_CHECKBOX:
 		    	sc = new Scanner(((CheckBox)myView).getText().toString());
 				((CheckBox)myView).setText("");
+				
 		    	break;				
 		    default: //case IS_TEXTVIEW:
 		    	sc = new Scanner(((TextView)myView).getText().toString());
@@ -1625,7 +1960,8 @@ public class UsbongUtils {
 	    			}
 	    		}	    		
 	    		
-	    		tokenizedStringList.add(temp.toString()+" ");
+//	    		tokenizedStringList.add(temp.toString()+" "); //commented out by Mike, 19 Sept. 2015
+	    		tokenizedStringList.add(temp.toString());
 	    		temp.delete(0, temp.length());//reset
 	    	}		    	    	
 	    }
@@ -1667,10 +2003,13 @@ public class UsbongUtils {
 					  
 					  if (parser.getName().equals("string")) {
 	
-						  Log.d(">>>>>parser.getAttributeValue(null, 'name'): ",parser.getAttributeValue(null, "name"));
-						  Log.d(">>>>>tokenizedStringList.get("+i+"): ",tokenizedStringList.get(i));
+//						  Log.d(">>>>>parser.getAttributeValue(null, 'name'): ",parser.getAttributeValue(null, "name"));
+//						  Log.d(">>>>>tokenizedStringList.get("+i+"): ",tokenizedStringList.get(i));
 	
-						  if (parser.getAttributeValue(null, "name").equals(tokenizedStringList.get(i).trim())) {
+						  //pattern taken from stackoverflow
+						  //http://stackoverflow.com/questions/7552253/how-to-remove-special-characters-from-a-string;
+						  //last accessed: 19 Sept. 2015
+						  if (parser.getAttributeValue(null, "name").equals(tokenizedStringList.get(i).trim().toLowerCase().replaceAll("[^\\w\\s]", ""))) {
 							  if (parser.next() == XmlPullParser.TEXT) {
 //								  Log.d(">>>>>parser.getText();: ",parser.getText());
 //								  return parser.getText();
@@ -1681,7 +2020,7 @@ public class UsbongUtils {
 							      SpannableString link = makeLinkSpan(tokenizedStringList.get(i), new View.OnClickListener() {          
 							            @Override
 							            public void onClick(View v) {
-									    	new AlertDialog.Builder(finalUdtea).setTitle("Phrase Hint!")
+									    	new AlertDialog.Builder(finalUdtea).setTitle("Word Hint!")
 						            		.setMessage(hintText)
 											.setPositiveButton("OK", new DialogInterface.OnClickListener() {					
 												@Override
@@ -1690,7 +2029,7 @@ public class UsbongUtils {
 											}).show();
 							            }
 							      });					
-							      Log.d(">>>","has match: "+tokenizedStringList.get(i));
+//							      Log.d(">>>","has match: "+tokenizedStringList.get(i));
 							      foundMatch=true;
 
 							      switch(type) {
@@ -1744,6 +2083,7 @@ public class UsbongUtils {
 		catch(Exception e) {
 			e.printStackTrace();
 		}
+		sc.close(); //added by Mike, 19 Sept. 2015
 		return myView;
     }
     
@@ -2269,5 +2609,86 @@ public class UsbongUtils {
             	return;
             }
         }    	    	
+    }
+    
+    //added by JP, 26 May 2015
+    public static boolean hasNetworkConnection(Context context) {
+        boolean haveConnectedWifi = false;
+        boolean haveConnectedMobile = false;
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo[] netInfo = cm.getAllNetworkInfo();
+        for (NetworkInfo ni : netInfo) {
+            if (ni.getTypeName().equalsIgnoreCase("WIFI"))
+                if (ni.isConnected())
+                    haveConnectedWifi = true;
+            if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
+                if (ni.isConnected())
+                    haveConnectedMobile = true;
+        }
+        return haveConnectedWifi || haveConnectedMobile;
+    }
+/*//commented out by Mike, 25 Sept. 2015    
+    //added by JP, 26 May 2015
+	public static void initDisplayAndConfigOfUIL(Context context) {
+		@SuppressWarnings("deprecation")
+		DisplayImageOptions options = new DisplayImageOptions.Builder()
+				.cacheInMemory(true)
+				.cacheOnDisc(true)
+				.imageScaleType(ImageScaleType.EXACTLY)
+				.resetViewBeforeLoading(true)
+				.showImageForEmptyUri(R.drawable.loading)
+				.showImageOnFail(R.drawable.loading)
+				.showImageOnLoading(R.drawable.loading)
+				.bitmapConfig(Bitmap.Config.RGB_565)
+				.displayer(new FadeInBitmapDisplayer(300)).build();
+		ImageLoaderConfiguration.Builder config = new ImageLoaderConfiguration.Builder(context);
+		config.memoryCache(new WeakMemoryCache());
+		config.defaultDisplayImageOptions(options);
+		config.threadPriority(Thread.NORM_PRIORITY - 2);
+		config.denyCacheImageMultipleSizesInMemory();
+		config.diskCacheFileNameGenerator(new Md5FileNameGenerator());
+		config.diskCacheSize(50 * 1024 * 1024); // 50 MiB
+		config.tasksProcessingOrder(QueueProcessingType.LIFO);
+		config.writeDebugLogs(); // Remove for release app
+		ImageLoader.getInstance().init(config.build());
+	}
+*/
+    //added by JP, 26 May 2015
+	public static String parseYouTubeLink(String l) {
+		String pattern = "(?<=watch\\?v=|/videos/|embed\\/|youtu.be\\/|\\/v\\/|watch\\?v%3D|%2Fvideos%2F|embed%窶娯�2F|youtu.be%2F|%2Fv%2F)[^#\\&\\?\n]*";
+
+		Pattern compiledPattern = Pattern.compile(pattern);
+	    Matcher matcher = compiledPattern.matcher(l);
+
+	    if(matcher.find()){
+	    	return matcher.group();
+	    }
+	    return "";
+	}
+
+    //added by JP, 26 May 2015
+    public static String removeExtension(String filePath) {
+        // These first few lines the same as Justin's
+        File f = new File(filePath);
+
+        // if it's a directory, don't remove the extention
+        if (f.isDirectory()) return filePath;
+
+        String name = f.getName();
+
+        // Now we know it's a file - don't need to do any special hidden
+        // checking or contains() checking because of:
+        final int lastPeriodPos = name.lastIndexOf('.');
+        if (lastPeriodPos <= 0)
+        {
+            // No period after first character - return name as it was passed in
+            return filePath;
+        }
+        else
+        {
+            // Remove the last period and everything after it
+            File renamed = new File(f.getParent(), name.substring(0, lastPeriodPos));
+            return renamed.getPath();
+        }
     }
 }

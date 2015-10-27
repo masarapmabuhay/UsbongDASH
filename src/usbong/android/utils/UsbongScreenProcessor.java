@@ -123,7 +123,7 @@ public class UsbongScreenProcessor
     				myStringToken="";
     			}	    			
     		}
-
+	    	
 		if (udtea.currScreen == udtea.MULTIPLE_RADIO_BUTTONS_SCREEN) {
 			udtea.setContentView(R.layout.multiple_radio_buttons_screen);
 			udtea.initBackNextButtons();
@@ -618,13 +618,16 @@ public class UsbongScreenProcessor
 		} else if (udtea.currScreen == udtea.DATE_SCREEN) {
 			udtea.setContentView(R.layout.date_screen);
 			udtea.initBackNextButtons();
-			TextView myDateScreenTextView = (TextView)udtea.findViewById(R.id.date_textview);
+			TextView myDateScreenTextView = (TextView)udtea.findViewById(R.id.date_textview); 
 			myDateScreenTextView = (TextView) UsbongUtils.applyTagsInView(UsbongDecisionTreeEngineActivity.getInstance(), myDateScreenTextView, UsbongUtils.IS_TEXTVIEW, udtea.currUsbongNode);
 			//Reference: http://code.google.com/p/android/issues/detail?id=2037
 			//last accessed: 21 Aug. 2012
 			Configuration userConfig = new Configuration();
 			Settings.System.getConfiguration( udtea.getContentResolver(), userConfig );
 			Calendar date = Calendar.getInstance( userConfig.locale);
+
+			
+/*			
 			//Reference: http://www.androidpeople.com/android-spinner-default-value;
 			//last accessed: 21 Aug. 2012		        
 			//month-------------------------------
@@ -638,15 +641,15 @@ public class UsbongScreenProcessor
 			dateMonthSpinner.setAdapter(udtea.monthAdapter );
 			dateMonthSpinner.setSelection(month);
 //		        System.out.println(">>>>>>>>>>>>>> month"+month);
-//		        Log.d(">>>>>>myStringToken",myStringToken);
-			for (int i=0; i<udtea.monthAdapter .getCount(); i++) {
-//		        	Log.d(">>>>>>udtea.monthAdapter ",udtea.monthAdapter .getItem(i).toString());
+		        Log.d(">>>>>>myStringToken",myStringToken);
+			for (int i=0; i<udtea.monthAdapter.getCount(); i++) {
+		        	Log.d(">>>>>>udtea.monthAdapter ",udtea.monthAdapter.getItem(i).toString());
 				
-				if (myStringToken.contains(udtea.monthAdapter .getItem(i).toString())) {
+				if (myStringToken.contains(udtea.monthAdapter.getItem(i).toString())) {
 					dateMonthSpinner.setSelection(i);
 					
 					//added by Mike, March 4, 2013
-					myStringToken = myStringToken.replace(udtea.monthAdapter .getItem(i).toString(), "");
+					myStringToken = myStringToken.replace(udtea.monthAdapter.getItem(i).toString(), "");
 				}
 			}		        		        
 			//-------------------------------------
@@ -662,7 +665,7 @@ public class UsbongScreenProcessor
 			dateDaySpinner.setAdapter(udtea.dayAdapter);
 			dateDaySpinner.setSelection(day);
 //		        System.out.println(">>>>>>>>>>>>>> day"+day);
-			//		        Log.d(">>>>>myStringToken",myStringToken);
+//					        Log.d(">>>>>myStringToken",myStringToken);
 //		        System.out.println(">>>>>>>> myStringToken"+myStringToken);
 			StringTokenizer myDateStringTokenizer = new StringTokenizer(myStringToken, ",");
 			String myDayStringToken="";
@@ -673,10 +676,11 @@ public class UsbongScreenProcessor
 				if (myDayStringToken.contains(udtea.dayAdapter.getItem(i).toString())) {
 					dateDaySpinner.setSelection(i);
 					
-					myStringToken = myStringToken.replace(udtea.dayAdapter.getItem(i).toString()+",", "");
+					myStringToken = myStringToken.replace(myDayStringToken+",", "");
 //		        		System.out.println(">>>>>>>>>>>myStringToken: "+myStringToken);
 				}
 			}
+    		Log.d(">>>>>>>>>>>myStringToken: ",myStringToken);
 			//-------------------------------------				
 			//year---------------------------------
 			int year = date.get(Calendar.YEAR);
@@ -689,6 +693,7 @@ public class UsbongScreenProcessor
 			else {
 				myDateYearEditText.setText(myStringToken);
 			}
+*/			
 		} else if (udtea.currScreen == udtea.TEXT_DISPLAY_SCREEN) {
 			udtea.setContentView(R.layout.text_display_screen);
 			udtea.initBackNextButtons();
@@ -761,7 +766,7 @@ public class UsbongScreenProcessor
 			    	if (tv.toString().equals("")) {
 			    		tv.setText("No message.");
 			    	}
-	    	    	tv.setTextSize((UsbongDecisionTreeEngineActivity.getInstance().getResources().getDimension(R.dimen.textsize)));
+	    	    	tv.setTextSize((UsbongDecisionTreeEngineActivity.getInstance().getResources().getDimension(R.dimen.textsize)));	    	    	
 
 			    	new AlertDialog.Builder(udtea).setTitle("Hey!")
 //	            		.setMessage(myMessage)
@@ -1003,15 +1008,34 @@ public class UsbongScreenProcessor
 			else if (udtea.currLanguageBeingUsed==UsbongUtils.LANGUAGE_JAPANESE) {
 				endStateTextView.setText((String) udtea.getResources().getText(R.string.UsbongEndStateTextViewJAPANESE));				    						    		
 			}
+			else if (udtea.currLanguageBeingUsed==UsbongUtils.LANGUAGE_MANDARIN) {
+				endStateTextView.setText((String) udtea.getResources().getText(R.string.UsbongEndStateTextViewMANDARIN));				    						    		
+			}
 			else { //if (udtea.currLanguageBeingUsed==UsbongUtils.LANGUAGE_ENGLISH) {
 				endStateTextView.setText((String) udtea.getResources().getText(R.string.UsbongEndStateTextViewENGLISH));				    						    		
 			}
+			//add Bisaya, Ilonggo, and Kapampangan
 			udtea.initBackNextButtons();
 		}
 		View myLayout= udtea.findViewById(R.id.parent_layout_id);
-        if (!UsbongUtils.setBackgroundImage(myLayout, udtea.myTree, "bg")) {
-    		myLayout.setBackgroundResource(R.drawable.bg);//default bg
+
+		//added by Mike, 19 July 2015    	
+        String bgStringName = UsbongUtils.getSpecificBGImageStringForThisScreenIfAvailable(udtea.currUsbongNode);
+//        Log.d(">>>>bgStringName",bgStringName);
+        if (bgStringName !=null) {
+        	UsbongUtils.setBackgroundImage(myLayout, udtea.myTree, bgStringName);
         }
+        else {
+	        if (!UsbongUtils.setBackgroundImage(myLayout, udtea.myTree, "bg")) {
+	    		myLayout.setBackgroundResource(R.drawable.bg);//default bg
+	        }
+        }
+        
+        String audioFileName = UsbongUtils.getAudioFilePathForThisScreenIfAvailable(udtea.currUsbongNode);
+        udtea.currUsbongAudioString=audioFileName;
+
+        String bgAudioFileName = UsbongUtils.getBGAudioFilePathForThisScreenIfAvailable(udtea.currUsbongNode);
+        udtea.currUsbongBGAudioString=bgAudioFileName;
         
 		if ((!udtea.usedBackButton) && (!udtea.hasReturnedFromAnotherActivity)){
 			udtea.usbongNodeContainer.addElement(udtea.currUsbongNode);
