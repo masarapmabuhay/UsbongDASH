@@ -45,6 +45,7 @@ import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
@@ -805,21 +806,39 @@ public class UsbongDecisionTreeEngineActivity extends AppCompatActivity implemen
 			}
 			else {
 				//it's either com.svox.pico (default) or com.svox.classic (Japanese, etc)        				
-				mTts.setEngineByPackageName("com.svox.pico"); //note: this method is already deprecated
+//commented out by Mike, 11 Oct. 2015
+//				mTts.setEngineByPackageName("com.svox.pico"); //note: this method is already deprecated
 				
 				switch (currLanguageBeingUsed) {
 					case UsbongUtils.LANGUAGE_FILIPINO:				    
 						mTts.setLanguage(new Locale("spa", "ESP"));
-						mTts.speak(UsbongUtils.convertFilipinoToSpanishAccentFriendlyText(sb.toString()), TextToSpeech.QUEUE_ADD, null); //QUEUE_FLUSH			
+						if (Build.VERSION.RELEASE.startsWith("5")) { 
+							mTts.speak(UsbongUtils.convertFilipinoToSpanishAccentFriendlyText(sb.toString()), TextToSpeech.QUEUE_FLUSH, null,null); //QUEUE_ADD			
+						}
+						else {
+							mTts.speak(UsbongUtils.convertFilipinoToSpanishAccentFriendlyText(sb.toString()), TextToSpeech.QUEUE_FLUSH, null); //QUEUE_ADD										
+						}
 						break;
 					case UsbongUtils.LANGUAGE_JAPANESE:
-				        mTts.setEngineByPackageName("com.svox.classic"); //note: this method is already deprecated
+//						commented out by Mike, 11 Oct. 2015
+//						mTts.setEngineByPackageName("com.svox.classic"); //note: this method is already deprecated
 						mTts.setLanguage(new Locale("ja", "JP"));
-						mTts.speak(sb.toString(), TextToSpeech.QUEUE_ADD, null); //QUEUE_FLUSH			
+						if (Build.VERSION.RELEASE.startsWith("5")) { 
+							mTts.speak(sb.toString(), TextToSpeech.QUEUE_FLUSH, null,null); //QUEUE_ADD			
+							
+						}
+						else {
+							mTts.speak(sb.toString(), TextToSpeech.QUEUE_FLUSH, null); //QUEUE_ADD			
+						}
 						break;
 					case UsbongUtils.LANGUAGE_ENGLISH:
 						mTts.setLanguage(new Locale("en", "US"));
-						mTts.speak(sb.toString(), TextToSpeech.QUEUE_ADD, null); //QUEUE_FLUSH			
+						if (Build.VERSION.RELEASE.startsWith("5")) { 
+							mTts.speak(sb.toString(), TextToSpeech.QUEUE_FLUSH, null,null); //QUEUE_ADD			
+						}
+						else {
+							mTts.speak(sb.toString(), TextToSpeech.QUEUE_FLUSH, null); //QUEUE_ADD										
+						}
 						break;
 					default:
 						mTts.setLanguage(new Locale("en", "US"));
