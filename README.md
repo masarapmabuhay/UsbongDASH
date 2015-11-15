@@ -21,7 +21,7 @@ The DASH Outcome Measure and the QuickDASH are the property of the Institute for
 The DASH is currently administered by the Institute for Work & Health.
 
 # App Ownership
-App Ownership belongs to the Institute of Work & Health, who approved the development of the Android App by Usbong Social Systems, Inc. (Usbong). Usbong customized their open source Usbong Engine to suit the features of the DASH tool. 
+App Ownership belongs to the Institute of Work & Health, who approved the development of the Android App by Usbong Social Systems, Inc. (Usbong). Usbong customized their open source Usbong Engine (https://github.com/masarapmabuhay/usbong) to suit the features of the DASH tool. 
 
 # Open Source Software License
 Copyright 2015 Usbong Social Systems, Inc.
